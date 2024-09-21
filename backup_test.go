@@ -6,7 +6,7 @@ import (
 )
 
 func TestBackup_Dump(t *testing.T) {
-	backup := NewBackup("127.0.0.1", "3306", "root", "root", "test2", "./backup", 2)
-	err, sqlFile := backup.Dump()
-	fmt.Println(err, sqlFile)
+	backup := NewBackup("127.0.0.1", "3306", "root", "root", "test_db", "./backup", 2)
+	err, zipFile := backup.Dump()
+	fmt.Println(err, zipFile)
 }

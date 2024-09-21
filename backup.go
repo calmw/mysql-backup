@@ -49,10 +49,11 @@ func (d Backup) Dump() (error, string) {
 	//设置备份文件
 	fileName := d.DatabaseName + "_" + now
 	backupPath := strings.TrimRight(d.BackupPath, "/")
-	backupFile := backupPath + "/" + fileName + ".sql"
-	//mysqldumpCmd := `mysqldump -h ` + d.Host + ` -P ` + d.Port + ` -u` + d.User + ` -p` + d.Password + ` --databases ` + d.DatabaseName + ` --ignore-table=` + d.DatabaseName + `.logs` + ` >` + backupFile
+	backupSqlFile := backupPath + "/" + fileName + ".sql"
+	backupZipFile := backupPath + "/" + fileName + ".zip"
+	//mysqldumpCmd := `mysqldump -h ` + d.Host + ` -P ` + d.Port + ` -u` + d.User + ` -p` + d.Password + ` --databases ` + d.DatabaseName + ` --ignore-table=` + d.DatabaseName + `.logs` + ` >` + backupSqlFile
 	//--ignore-table=库名.表名 表示备份忽略该表
-	mysqldumpCmd := `mysqldump -h ` + d.Host + ` -P ` + d.Port + ` -u` + d.User + ` -p` + d.Password + ` --databases ` + d.DatabaseName + ` >` + backupFile
+	mysqldumpCmd := `mysqldump -h ` + d.Host + ` -P ` + d.Port + ` -u` + d.User + ` -p` + d.Password + ` --databases ` + d.DatabaseName + ` >` + backupSqlFile
 	if err := ExecutiveCommand(mysqldumpCmd); err != nil {
 		return err, ""
 	}
@@ -60,7 +61,7 @@ func (d Backup) Dump() (error, string) {
 	if err := ExecutiveCommand(zipCmd); err != nil {
 		return err, ""
 	}
-	err := os.Remove(backupFile)
+	err := os.Remove(backupSqlFile)
 	if err != nil {
 		return err, ""
 	}
@@ -68,7 +69,7 @@ func (d Backup) Dump() (error, string) {
 		return err, ""
 	}
 
-	return nil, backupFile
+	return nil, backupZipFile
 }
 
 func ExecutiveCommand(command string) error {

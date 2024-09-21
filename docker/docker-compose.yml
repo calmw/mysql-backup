@@ -1,0 +1,48 @@
+# Copyright 2024 calm.wang@hotmail.com
+# SPDX-License-Identifier: LGPL-3.0-only
+version: '3.9'
+
+networks:
+  backup:
+
+services:
+  mysql-backup:
+    image: backup:0.1.0
+    container_name: backup
+    restart: always
+    environment:
+      # 备份设置
+      - DB_HOST=localhost
+      - DB_PORT=3307
+      - DB_USER=root
+      - DB_PASSWORD=xx
+      - DB_NAME=city_node
+      - BACKUP_PATH=/src/backup_data
+      - BACKUP_FILE_NUM=5
+      # email发送邮箱设置
+      - SENDER_EMAIL=calm.fei@gmail.com
+      - SENDER_USERNAME=dev server
+      - SENDER_PASSWORD=xxxx
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=587
+      # 邮件发送及内容设置
+      - TO=calm.wang@hotmail.com
+      - SUBJECT=db backup
+      - BODY=This is an email body. \nHere's more data.\n
+# 备份间隔及是否发送邮件设置
+      - BACKUP_INTERVAL=60 # 备份时间间隔，单位秒
+      - SEND_EMAIL=false # false 只备份不发送
+    volumes:
+      - ./backup_data:/src/backup_data
+    networks:
+      - backup
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "1"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G

@@ -7,7 +7,7 @@ networks:
 
 services:
   mysql-backup:
-    image: backup:0.1.0
+    image: calmw/backup:0.1.1
     container_name: backup
     restart: always
     environment:
@@ -29,7 +29,7 @@ services:
       - TO=calm.wang@hotmail.com
       - SUBJECT=db backup
       - BODY=This is an email body. \nHere's more data.\n
-# 备份间隔及是否发送邮件设置
+      # 备份间隔及是否发送邮件设置
       - BACKUP_INTERVAL=60 # 备份时间间隔，单位秒
       - SEND_EMAIL=false # false 只备份不发送
     volumes:

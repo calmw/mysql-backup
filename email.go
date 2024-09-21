@@ -32,22 +32,33 @@ func NewEmail(username, password, host string, port int) *Email {
 // Body:    "This is the body of the email",
 // Attach:  []string{"path/to/your/file.txt"},
 func (e *Email) Send(to, from, subject, body string, attach []string) error {
+	type EmailParameter struct {
+		To      string
+		From    string
+		Subject string
+		Body    string
+	}
 	auth := smtp.PlainAuth("", e.Username, e.Password, e.Host)
-	t := template.Must(template.New("email").Parse(`To: {{.to}}
-From: {{.from}}
-Subject: {{.subject}}
+	t := template.Must(template.New("email").Parse(`To: {{.To}}
+From: {{.From}}
+Subject: {{.Subject}}
 MIME-version: 1.0
 Content-Type: multipart/mixed; boundary="nextpart"
  
 --nextpart
 Content-Type: text/plain; charset="UTF-8"
  
-{{.body}}
+{{.Body}}
 --nextpart
 `))
 
 	var buffer bytes.Buffer
-	if err := t.Execute(&buffer, e); err != nil {
+	if err := t.Execute(&buffer, EmailParameter{
+		To:      to,
+		From:    from,
+		Subject: subject,
+		Body:    body,
+	}); err != nil {
 		return err
 	}
 

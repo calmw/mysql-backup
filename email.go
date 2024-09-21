@@ -1,23 +1,20 @@
 package backup
 
 import (
-	"bytes"
-	"fmt"
-	"net/smtp"
-	"os"
-	"path/filepath"
-	"text/template"
+	"github.com/go-gomail/gomail"
 )
 
 type Email struct {
+	Email    string
 	Username string
 	Password string
 	Host     string
 	Port     int
 }
 
-func NewEmail(username, password, host string, port int) *Email {
+func NewEmail(email, username, password, host string, port int) *Email {
 	return &Email{
+		Email:    email,
 		Username: username,
 		Password: password,
 		Host:     host,
@@ -25,82 +22,22 @@ func NewEmail(username, password, host string, port int) *Email {
 	}
 }
 
-// Send
-// To:      "recipient@example.com",
-// From:    "sender@example.com",
-// Subject: "Email with attachment",
-// Body:    "This is the body of the email",
-// Attach:  []string{"path/to/your/file.txt"},
-func (e *Email) Send(to, from, subject, body string, attach []string) error {
-	type EmailParameter struct {
-		To      string
-		From    string
-		Subject string
-		Body    string
-	}
-	auth := smtp.PlainAuth("", e.Username, e.Password, e.Host)
-	t := template.Must(template.New("email").Parse(`To: {{.To}}
-From: {{.From}}
-Subject: {{.Subject}}
-MIME-version: 1.0
-Content-Type: multipart/mixed; boundary="nextpart"
- 
---nextpart
-Content-Type: text/plain; charset="UTF-8"
- 
-{{.Body}}
---nextpart
-`))
+func (e *Email) Send(to, subject, body string, attach []string) error {
+	// 创建邮件消息
+	msg := gomail.NewMessage()
+	msg.SetHeader("From", e.Email)    // 设置发件人
+	msg.SetHeader("To", to)           // 设置收件人
+	msg.SetHeader("Subject", subject) // 设置邮件主题
+	msg.SetBody("text/html", body)    // 设置邮件正文
 
-	var buffer bytes.Buffer
-	if err := t.Execute(&buffer, EmailParameter{
-		To:      to,
-		From:    from,
-		Subject: subject,
-		Body:    body,
-	}); err != nil {
-		return err
+	// 添加附件
+	for _, f := range attach {
+		msg.Attach(f) // 添加文件附件
 	}
 
-	msg := buffer.Bytes()
-	for _, file := range attach {
-		part, err := createPart(file)
-		if err != nil {
-			return err
-		}
-		msg = append(msg, part...)
-	}
+	// 设置SMTP配置
+	d := gomail.NewDialer(e.Host, e.Port, e.Email, e.Password)
 
-	msg = append(msg, []byte("--nextpart--")...)
-
-	return smtp.SendMail(
-		fmt.Sprintf("%s:%d", e.Host, e.Port),
-		auth,
-		from,
-		[]string{to},
-		msg,
-	)
-}
-
-func createPart(path string) ([]byte, error) {
-	partBoundary := "--nextpart"
-	filename := filepath.Base(path)
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	body := new(bytes.Buffer)
-	body.WriteString(partBoundary + "\n")
-	body.WriteString("Content-Type: application/octet-stream; name=\"" + filename + "\"\n")
-	body.WriteString("Content-Disposition: attachment; filename=\"" + filename + "\"\n")
-	body.WriteString("Content-Transfer-Encoding: base64\n")
-	body.WriteString("\n")
-
-	// Copy the file data into the buffer, base64 encoding it
-	// ...
-	// body.WriteString("\n" + partBoundary + "--")
-
-	return body.Bytes(), nil
+	// 发送邮件
+	return d.DialAndSend(msg)
 }

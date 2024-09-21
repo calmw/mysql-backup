@@ -21,24 +21,42 @@ import (
  *
  */
 
-const (
-	BackupPath = "/备份所在文件夹"
-)
+type Dump struct {
+	Host         string
+	Port         string
+	User         string
+	Password     string
+	DatabaseName string
+	BackupPath   string
+	SqlPath      string
+}
+
+func NewDump(host, port, user, password, databaseName, backupPath, sqlPath string) *Dump {
+	return &Dump{
+		Host:         host,
+		Port:         port,
+		User:         user,
+		Password:     password,
+		DatabaseName: databaseName,
+		BackupPath:   backupPath,
+		SqlPath:      sqlPath,
+	}
+}
 
 // BackupMySqlDb 备份
-func BackupMySqlDb(host, port, user, password, databaseName, sqlPath string) (error, string) {
+func (d Dump) BackupMySqlDb() (error, string) {
 	//获得一个当前的时间戳
 	now := time.Now().Format("20060102150405")
 	var backupPath string
 	// 判断文件夹不存在时自动创建
-	if !FileExists(sqlPath) {
-		if err := os.MkdirAll(BackupPath, os.ModePerm); err != nil {
+	if !FileExists(d.BackupPath) {
+		if err := os.MkdirAll(d.BackupPath, os.ModePerm); err != nil {
 			return err, ""
 		}
 	}
 	//设置备份文件的路径
-	backupPath = sqlPath + databaseName + "_" + now + ".sql"
-	mysqldumpCmd := `mysqldump -h ` + host + ` -P ` + port + ` -u` + user + ` -p` + password + ` --databases ` + databaseName + ` --ignore-table=` + databaseName + `.logs` + ` >` + backupPath
+	backupPath = d.SqlPath + d.DatabaseName + "_" + now + ".sql"
+	mysqldumpCmd := `mysqldump -h ` + d.Host + ` -P ` + d.Port + ` -u` + d.User + ` -p` + d.Password + ` --databases ` + d.DatabaseName + ` --ignore-table=` + d.DatabaseName + `.logs` + ` >` + backupPath
 	//--ignore-table=库名.表名 表示备份忽略该表
 	if err := ExecutiveCommand(mysqldumpCmd); err != nil {
 		return err, ""
@@ -47,9 +65,9 @@ func BackupMySqlDb(host, port, user, password, databaseName, sqlPath string) (er
 }
 
 // RecoverMySqlDb 恢复数据表
-func RecoverMySqlDb(host, port, user, password, databaseName, backupPath string) error {
+func (d Dump) RecoverMySqlDb() error {
 	//恢复表 mysql -h[地址] -P[端口] -u[用户名] -p[密码] [数据库名] <[备份文件]
-	mysqldumpCmd := `mysql -h` + host + ` -P` + port + ` -u` + user + ` -p` + password + ` ` + databaseName + ` <` + backupPath
+	mysqldumpCmd := `mysql -h` + d.Host + ` -P` + d.Port + ` -u` + d.User + ` -p` + d.Password + ` ` + d.DatabaseName + ` <` + d.BackupPath
 	if err := ExecutiveCommand(mysqldumpCmd); err != nil {
 		return err
 	}

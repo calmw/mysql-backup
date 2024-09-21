@@ -67,7 +67,7 @@ Content-Type: text/plain; charset="UTF-8"
 		auth,
 		from,
 		[]string{to},
-		[]byte(msg),
+		msg,
 	)
 }
 
